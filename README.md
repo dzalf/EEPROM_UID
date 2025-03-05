@@ -205,6 +205,8 @@ Created by dzalf, this library is loosely based on the 24AA025UID library by Ste
 
 [x] Test compatibility with other EEPROM UID sizes and models. (_under development_)
 
+[ ] Test on multiple platforms (so far: ESP32-S2 Lolin Mini S2 from WeMOS)
+
 [ ] Validate edge cases
 
 [ ] Extend functionality to support multi-page write operations.
