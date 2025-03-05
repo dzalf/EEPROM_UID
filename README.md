@@ -1,6 +1,6 @@
 # EEPROM_UID Library
 
-The `EEPROM_UID` library provides an interface to interact with the [24AA02xUID EEPROM](https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/20005202A.pdf). This library supports reading and writing data, retrieving unique identifiers (UIDs) of various lengths, and handling errors during interactions with the EEPROM.
+The `EEPROM_UID` library provides an interface to interact with the [24AA02xUID EEPROMs](https://ww1.microchip.com/downloads/aemDocuments/documents/OTH/ProductDocuments/DataSheets/20005202A.pdf) and [24AA02E48/24AA025E48/24AA02E64/24AA025E64](https://th.mouser.com/datasheet/2/268/2_Kbit_I2C_Serial_EEPROMs__2bEUI_48_or_EUI_64_Node-3442802.pdf) EUI-48/64 devices. This library supports reading and writing data, retrieving unique identifiers (UIDs) of various lengths, and handling errors during interactions with the EEPROM.
 
 ## Features
 
