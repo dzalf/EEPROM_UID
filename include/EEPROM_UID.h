@@ -1,8 +1,8 @@
 /**
  * @file EEPROM_UID.h
  * @author dzalf (github.com/dzalf)
- * @brief Example code to retrieve the UID from the 24AA025UID EEPROM
- * @version 0.1
+ * @brief Example code to retrieve the UID from the family of 24AA02xUID/24AA02xUID EEPROMs
+ * @version 1.1.0
  * @date 2025-03-03
  *
  * Note: This ibrary is loosely based on the 24AA025E48 EEPROM library by Stephen Minakian
@@ -18,7 +18,49 @@
 #include <Arduino.h>
 #include <Wire.h>
 
+#define LIBRARY_VERSION "0.1"
+
 #define DEFAULT_ADDRESS 0x50
+
+//* EEPROM chip definitions
+
+// *** SELECT ONE ***
+
+//* UID length extensible chips (up to 256 bits):
+// #define EEPROM_24AA02UID
+// #define EEPROM_24AA025UID
+
+//* EUI-48 chips:
+// #define EEPROM_24AA02E48
+#define EEPROM_24AA025E48
+
+//* EUI-64 chips:
+// #define EEPROM_24AA02E64
+// #define EEPROM_24AA025E64
+
+//* EEPROM size in bytes
+#define EEPROM_SIZE_BYTES 256
+
+//* Page size in bytes
+#if defined(EEPROM_24AA025UID) || defined(EEPROM_24AA025E48) || defined(EEPROM_24AA025E64)
+#define MAX_WRITE_PAGE 16
+#elif defined(EEPROM_24AA02UID) || defined(EEPROM_24AA02E48) || defined(EEPROM_24AA02E64)
+#define MAX_WRITE_PAGE 8
+#else
+#error "EEPROM not defined"
+#endif
+
+//* Fixed or variable length UID/EID
+#if defined(EEPROM_24AA02UID) || defined(EEPROM_24AA025UID)
+#define EXTENSIBLE_LENGTH true
+#elif defined(EEPROM_24AA02E48) || defined(EEPROM_24AA025E48) || defined(EEPROM_24AA02E64) || defined(EEPROM_24AA025E64)
+#define EXTENSIBLE_LENGTH false
+#if defined(EEPROM_24AA02E48) || defined(EEPROM_24AA025E48)
+#define FIXED_LENGTH 48
+#elif defined(EEPROM_24AA02E64) || defined(EEPROM_24AA025E64)
+#define FIXED_LENGTH 64
+#endif
+#endif
 
 //* Register Addresses
 #define START_ADDRESS_32bit 0xFC
@@ -39,22 +81,6 @@ enum UIDLength
   UID_128bit,
   UID_256bit
 };
-
-#define EEPROM_25AA025UID
-#define EEPROM_SIZE_BYTES 256
-
-#if defined(EEPROM_25AA025UID) && defined(EEPROM_25AA02UID)
-#error "Cannot have both parts defined"
-#endif
-
-#ifdef EEPROM_25AA025UID
-#define MAX_WRITE_PAGE 16
-
-#endif
-
-#ifdef EEPROM_25AA02UID
-#define MAX_WRITE_PAGE 8
-#endif
 
 /**
  * @class EEPROM_UID
@@ -118,6 +144,13 @@ public:
    * @param length UIDLength enum specifying the UID size (default is UID_32bit)
    */
   void getUID(char *uidBuffer, size_t bufferSize, UIDLength length = UID_32bit);
+
+  /**
+   * @brief Validate UID length for the EEPROM chip
+   * @param length The requested UID length (enum UIDLength)
+   * @return true if the length is valid, false otherwise
+   */
+  bool isValidLength(UIDLength length);
 
   /**
    * @brief Get the Last UID object

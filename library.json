@@ -1,8 +1,8 @@
 {
   "name": "EEPROM_UID",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A library for retrieving unique IDs from an UID EEPROM.",
-  "keywords": "EEPROM, UID, unique ID",
+  "keywords": "EEPROM, UID, unique ID, EUI, 24AA02xUID, 24AA02xExx, 24AA02E48, 24AA025E48, 24AA02E64, 24AA025E64",
   "repository":
   {
     "type": "git",

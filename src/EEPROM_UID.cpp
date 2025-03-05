@@ -2,7 +2,7 @@
  * @file EEPROM_UID.cpp
  * @author dzalf (github.com/dzalf)
  * @brief
- * @version 0.1
+ * @version 1.1.0
  * @date 2025-03-05
  *
  * @copyright Copyright (c) 2025
@@ -42,12 +42,20 @@ uint32_t EEPROM_UID::getStoredUID() const
 
 uint8_t EEPROM_UID::readData(uint8_t *dataBuffer, uint8_t startAddress, uint8_t bytes)
 {
+  // Ensure the requested read does not exceed EEPROM memory limits
+  if (startAddress + bytes > EEPROM_SIZE_BYTES)
+  {
+    setError("Read exceeds EEPROM memory size");
+    return 0;
+  }
+
   uint8_t readBytes = readConsecutive(dataBuffer, startAddress, bytes > 32 ? 32 : bytes);
   if (readBytes == 0)
   {
     setError("Failed to read data");
     return 0;
   }
+
   if (bytes > 32)
   {
     return readBytes + readData(dataBuffer + 32, startAddress + 32, bytes - 32);
@@ -57,8 +65,15 @@ uint8_t EEPROM_UID::readData(uint8_t *dataBuffer, uint8_t startAddress, uint8_t 
 
 uint8_t EEPROM_UID::writeData(uint8_t *dataBuffer, uint8_t startAddress, uint8_t bytes)
 {
-  uint8_t bytesOfPageRemaining = 0x20 - (startAddress % 0x20);
-  bytesOfPageRemaining = bytesOfPageRemaining % 16;
+  // Ensure the requested write does not exceed EEPROM memory limits
+  if (startAddress + bytes > EEPROM_SIZE_BYTES)
+  {
+    setError("Write exceeds EEPROM memory size");
+    return 0;
+  }
+
+  // Calculate remaining bytes in the current page
+  uint8_t bytesOfPageRemaining = MAX_WRITE_PAGE - (startAddress % MAX_WRITE_PAGE);
 
   if (bytes > bytesOfPageRemaining && bytesOfPageRemaining != 0)
   {
@@ -78,6 +93,7 @@ uint8_t EEPROM_UID::writeData(uint8_t *dataBuffer, uint8_t startAddress, uint8_t
     setError("Failed to write data");
     return 0;
   }
+
   if (bytes > MAX_WRITE_PAGE)
   {
     return writtenBytes + writeData(dataBuffer + MAX_WRITE_PAGE, startAddress + MAX_WRITE_PAGE, bytes - MAX_WRITE_PAGE);
@@ -87,6 +103,13 @@ uint8_t EEPROM_UID::writeData(uint8_t *dataBuffer, uint8_t startAddress, uint8_t
 
 uint32_t EEPROM_UID::getUID(UIDLength length)
 {
+
+  // Validate the requested UID length
+  if (!isValidLength(length))
+  {
+    return 0; // Return 0 on invalid request
+  }
+
   uint8_t startAddress;
   uint8_t numBytes;
 
@@ -135,6 +158,13 @@ uint32_t EEPROM_UID::getUID(UIDLength length)
 
 void EEPROM_UID::getUID(char *uidBuffer, size_t bufferSize, UIDLength length)
 {
+
+  // Validate the requested UID length
+  if (!isValidLength(length))
+  {
+    uidBuffer[0] = '\0'; // Nullify the buffer on invalid request
+    return;
+  }
 
   uint8_t startAddress;
   uint8_t numBytes;
@@ -189,6 +219,31 @@ void EEPROM_UID::getUID(char *uidBuffer, size_t bufferSize, UIDLength length)
   uidBuffer[numBytes * 2] = '\0'; // Null-terminate
 }
 
+bool EEPROM_UID::isValidLength(UIDLength length)
+{
+#if EXTENSIBLE_LENGTH == true
+  // Extensible chips allow any length; always return true.
+  return true;
+#elif EXTENSIBLE_LENGTH == false
+// Non-extensible chips require fixed lengths
+#if defined(FIXED_LENGTH)
+  if ((length == UID_48bit && FIXED_LENGTH != 48) ||
+      (length == UID_64bit && FIXED_LENGTH != 64))
+  {
+    setError("Invalid UID length request for this EEPROM chip.");
+    return false;
+  }
+  return true; // Valid request
+#else
+  setError("Fixed-length configuration is undefined for this EEPROM chip.");
+  return false;
+#endif
+#else
+  setError("EXTENSIBLE_LENGTH configuration is not properly defined.");
+  return false;
+#endif
+}
+
 bool EEPROM_UID::hasError()
 {
   return _error;
@@ -196,7 +251,10 @@ bool EEPROM_UID::hasError()
 
 const char *EEPROM_UID::getErrorMessage()
 {
-  return _errorMessage;
+  const char *tempError = _errorMessage; // Temporarily store the current error message
+  _error = false;                        // Reset the error flag
+  _errorMessage = "";                    // Clear the error message
+  return tempError;                      // Return the stored error message
 }
 
 const char *EEPROM_UID::getEEPROMSize()
@@ -278,6 +336,13 @@ uint8_t EEPROM_UID::writeByte(uint8_t dataAddress, uint8_t data)
 
 uint8_t EEPROM_UID::writePage(uint8_t *dataBuffer, uint8_t startAddress, uint8_t bytes)
 {
+  // Ensure we are not exceeding the EEPROM size
+  if (startAddress + bytes > EEPROM_SIZE_BYTES)
+  {
+    setError("Write page exceeds EEPROM memory size");
+    return 0;
+  }
+
   _wire->beginTransmission(_wireAddress);
   _wire->write(startAddress);
   _wire->write(dataBuffer, bytes);
@@ -288,9 +353,10 @@ uint8_t EEPROM_UID::writePage(uint8_t *dataBuffer, uint8_t startAddress, uint8_t
     setError("Failed to end transmission");
     return 0;
   }
-  delay(5); // This is the only intentional piece of blocking code
 
-  return bytes; // Success
+  delay(5); // Ensure the write operation completes
+
+  return bytes; // Return the number of bytes written
 }
 
 uint32_t EEPROM_UID::readUID()

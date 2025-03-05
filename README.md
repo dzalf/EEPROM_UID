@@ -6,9 +6,10 @@ The `EEPROM_UID` library provides an interface to interact with the [24AA02xUID 
 
 - Retrieve fixed and dynamic-length unique device IDs (UIDs) (32-bit, 48-bit, 64-bit, 128-bit, and 256-bit).
 - Automatic caching of 32-bit UID during initialization.
+- Validate UID length requests based on the specific chip configuration.
 - Read and write data to/from the EEPROM.
 - Handle errors with descriptive error messages.
-- Optimized for the 24AA025UID series with a maximum storage size of 2 Kbits (250 bytes).
+- Optimized for the 24AA025UID series with a maximum storage size of 2 Kbits.
 
 ---
 
@@ -173,11 +174,9 @@ void setup() {
   uint8_t dataBuffer[16];
   uint8_t bytesRead = eUID.readData(dataBuffer, 0x00, sizeof(dataBuffer));
   Serial.print("Data read from EEPROM: ");
-
   for (uint8_t i = 0; i < bytesRead; i++) {
     Serial.printf("%02X ", dataBuffer[i]);
   }
-
   Serial.println();
 
   // Write data to EEPROM
@@ -185,14 +184,13 @@ void setup() {
     0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80,
     0x90, 0xA0, 0xB0, 0xC0, 0xD0, 0xE0, 0xF0, 0xFF
   };
-
   eUID.writeData(writeBuffer, 0x00, sizeof(writeBuffer));
   Serial.println("Data written to EEPROM.");
-
 }
+
 void loop() {
   // Empty loop for this example
-  }
+}
 ```
 
 ## License
@@ -205,7 +203,9 @@ Created by dzalf, this library is loosely based on the 24AA025UID library by Ste
 
 ## #TODOs
 
-[ ] Test compatibility with other EEPROM UID sizes and models.
+[x] Test compatibility with other EEPROM UID sizes and models. (_under development_)
+
+[ ] Validate edge cases
 
 [ ] Extend functionality to support multi-page write operations.
 
