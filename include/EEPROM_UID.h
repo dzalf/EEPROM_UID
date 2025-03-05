@@ -5,7 +5,7 @@
  * @version 1.1.0
  * @date 2025-03-03
  *
- * Note: This ibrary is loosely based on the 24AA025E48 EEPROM library by Stephen Minakian
+ * Note: This library is loosely based on the 24AA025E48 EEPROM library by Stephen Minakian
  *      (from [Healthsmart](https://github.com/Healthsmart/24AA025UID_library))
  *
  * @copyright Copyright (c) 2025
@@ -94,7 +94,7 @@ public:
    * @param address I2C address of the EEPROM
    * @param wire Pointer to TwoWire object
    */
-  EEPROM_UID(uint8_t address, TwoWire *wire);
+  EEPROM_UID(uint8_t address = DEFAULT_ADDRESS, TwoWire *wire = &Wire);
 
   /**
    * @brief Default constructor
@@ -105,7 +105,7 @@ public:
    * @brief Constructor with wire object
    * @param wire Pointer to TwoWire object
    */
-  EEPROM_UID(TwoWire *wire);
+  EEPROM_UID(TwoWire *wire = &Wire);
 
   /**
    * @brief Initialize the EEPROM
@@ -183,10 +183,12 @@ public:
   const char *getEEPROMSize();
 
 private:
-  TwoWire *_wire;       ///< Pointer to TwoWire object
-  uint8_t _wireAddress; ///< I2C address of the EEPROM
-  uint32_t _storedUID;  // Cached 32-bit UID
-  char _lastUID[65];    // Cached last-read UID in hex (max 256-bit + null)
+  uint8_t _wireAddress;      ///< I2C address of the EEPROM
+  TwoWire *_wire;            ///< Pointer to TwoWire object
+  bool _error;               ///< Error flag
+  const char *_errorMessage; ///< Error message
+  uint32_t _storedUID;       // Cached 32-bit UID
+  char _lastUID[65];         // Cached last-read UID in hex (max 256-bit + null)
 
   /**
    * @brief Read a byte from EEPROM
@@ -226,9 +228,6 @@ private:
    * @return UID value
    */
   uint32_t readUID();
-
-  bool _error;               ///< Error flag
-  const char *_errorMessage; ///< Error message
 
   /**
    * @brief Set error message

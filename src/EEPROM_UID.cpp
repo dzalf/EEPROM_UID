@@ -15,6 +15,9 @@
 
 //* Constructors
 
+EEPROM_UID::EEPROM_UID(TwoWire *wire)
+    : EEPROM_UID(DEFAULT_ADDRESS, wire) {}
+
 EEPROM_UID::EEPROM_UID(uint8_t address, TwoWire *wire)
     : _wireAddress(address), _wire(wire), _error(false), _errorMessage(""), _storedUID(0)
 {
@@ -25,9 +28,8 @@ EEPROM_UID::EEPROM_UID(uint8_t address, TwoWire *wire)
 EEPROM_UID::EEPROM_UID()
     : EEPROM_UID(DEFAULT_ADDRESS, &Wire) {}
 
-EEPROM_UID::EEPROM_UID(TwoWire *wire)
-    : EEPROM_UID(DEFAULT_ADDRESS, wire) {}
 
+//* Methods
 void EEPROM_UID::begin()
 {
   _wire->begin();
