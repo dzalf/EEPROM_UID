@@ -2,7 +2,7 @@
  * @file EEPROM_UID.h
  * @author dzalf (github.com/dzalf)
  * @brief Example code to retrieve the UID from the family of 24AA02xUID/24AA02xUID EEPROMs
- * @version 1.1.0
+ * @version 1.2.0
  * @date 2025-03-03
  *
  * Note: This library is loosely based on the 24AA025E48 EEPROM library by Stephen Minakian

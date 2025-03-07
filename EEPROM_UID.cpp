@@ -2,7 +2,7 @@
  * @file EEPROM_UID.cpp
  * @author dzalf (github.com/dzalf)
  * @brief
- * @version 1.1.0
+ * @version 1.2.0
  * @date 2025-03-05
  *
  * @copyright Copyright (c) 2025
