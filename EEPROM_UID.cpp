@@ -28,15 +28,39 @@ EEPROM_UID::EEPROM_UID(uint8_t address, TwoWire *wire)
 EEPROM_UID::EEPROM_UID()
     : EEPROM_UID(DEFAULT_ADDRESS, &Wire) {}
 
-
 //* Methods
-void EEPROM_UID::begin()
+bool EEPROM_UID::begin()
 {
-  _wire->begin();
-  _storedUID = getUID(UID_32bit); // Fetch 32-bit UID during initialization
+
+  UIDLength _chipUIDLength; // Length of the UID in bits
+
+  if (BASE_LENGTH == 32)
+  {
+    _chipUIDLength = UID_32bit;
+  }
+  else if (BASE_LENGTH == 48)
+  {
+    _chipUIDLength = UID_48bit;
+  }
+  else if (BASE_LENGTH == 64)
+  {
+    _chipUIDLength = UID_64bit;
+  }
+  else if (BASE_LENGTH == 128)
+  {
+    _chipUIDLength = UID_128bit;
+  }
+  else if (BASE_LENGTH == 256)
+  {
+    _chipUIDLength = UID_256bit;
+  }
+
+  _storedUID = getUID32(_chipUIDLength); // Fetch 32-bit UID during initialization
+
+  return (_storedUID != 0);
 }
 
-uint32_t EEPROM_UID::getStoredUID() const
+uint32_t EEPROM_UID::getStored32bitUID() const
 {
   // Return the cached 32-bit UID
   return _storedUID;
@@ -103,48 +127,51 @@ uint8_t EEPROM_UID::writeData(uint8_t *dataBuffer, uint8_t startAddress, uint8_t
   return writtenBytes;
 }
 
-uint32_t EEPROM_UID::getUID(UIDLength length)
+uint32_t EEPROM_UID::getUID32(UIDLength length)
 {
 
   // Validate the requested UID length
   if (!isValidLength(length))
   {
+    setError("Invalid UID length request");
     return 0; // Return 0 on invalid request
   }
 
   uint8_t startAddress;
-  uint8_t numBytes;
+  const uint8_t numBytes = 4; // Always reading 4 bytes
 
   // Set start address and bytes based on length
   switch (length)
   {
   case UID_32bit:
     startAddress = START_ADDRESS_32bit;
-    numBytes = 4;
+
     break;
   case UID_48bit:
     startAddress = START_ADDRESS_48bit;
-    numBytes = 6;
+
     break;
   case UID_64bit:
     startAddress = START_ADDRESS_64bit;
-    numBytes = 8;
+
     break;
   case UID_128bit:
     startAddress = START_ADDRESS_128bit;
-    numBytes = 16;
+
     break;
   case UID_256bit:
     startAddress = START_ADDRESS_256bit;
-    numBytes = 32;
+
     break;
   default:
     return 0; // Invalid length
   }
 
   uint8_t dataBuffer[4]; // For uint32_t, we only need 4 bytes
+
   if (readConsecutive(dataBuffer, startAddress, numBytes) < numBytes)
   {
+    setError("Failed to read full UID. Read consecutive bytes failed");
     return 0; // Failed to read full UID
   }
 
@@ -161,17 +188,21 @@ uint32_t EEPROM_UID::getUID(UIDLength length)
 void EEPROM_UID::getUID(char *uidBuffer, size_t bufferSize, UIDLength length)
 {
 
+  // dataBuffer to hold up to 256 bits
+  uint8_t dataBuffer[32] = {0}; // Ensure clean data buffer
+
   // Validate the requested UID length
   if (!isValidLength(length))
   {
-    uidBuffer[0] = '\0'; // Nullify the buffer on invalid request
+    uidBuffer[0] = '\0'; // Nullify buffer on invalid request
+    setError("Invalid UID length request");
     return;
   }
 
   uint8_t startAddress;
   uint8_t numBytes;
 
-  // Set start address and bytes based on length
+  // Determine start address and required number of bytes
   switch (length)
   {
   case UID_32bit:
@@ -199,26 +230,55 @@ void EEPROM_UID::getUID(char *uidBuffer, size_t bufferSize, UIDLength length)
     return;
   }
 
-  if (bufferSize < numBytes * 2 + 1)
+  // Validate buffer size before proceeding
+ 
+  if (bufferSize < numBytes)
   {
-    // Insufficient buffer size
-    uidBuffer[0] = '\0';
+    uidBuffer[0] = '\0'; // Nullify buffer
+    setError("Buffer too small for UID length");
     return;
   }
 
-  uint8_t dataBuffer[32];
-  if (readConsecutive(dataBuffer, startAddress, numBytes) < numBytes)
+  // Prevent exceeding buffer limit
+  if (numBytes > sizeof(dataBuffer))
   {
-    uidBuffer[0] = '\0'; // Failed to read full UID
+    uidBuffer[0] = '\0'; // Nullify buffer
+    setError("Requested UID length exceeds buffer size");
     return;
   }
 
-  // Convert each byte to hexadecimal and store it in uidBuffer
+  // Read UID from EEPROM
+
+  uint8_t bytesRead = readConsecutive(dataBuffer, startAddress, numBytes);
+
+  if (bytesRead < numBytes)
+    {
+        setError("Failed to read full UID. Data may be incomplete");
+        memset(uidBuffer, 0, bufferSize);  // Nullify buffer
+        return;
+    }
+
+    // Copy raw binary UID into uidBuffer
+    memcpy(uidBuffer, dataBuffer, numBytes); 
+
+  /*
+  if (bytesRead < numBytes)
+  {
+    uidBuffer[0] = '\0'; // Nullify buffer on failure
+    setError("Partial UID read, data may be incomplete");
+    return;
+  }
+
+  // Convert bytes to hexadecimal and store in uidBuffer
   for (uint8_t i = 0; i < numBytes; i++)
   {
     snprintf(&uidBuffer[i * 2], 3, "%02X", dataBuffer[i]);
   }
-  uidBuffer[numBytes * 2] = '\0'; // Null-terminate
+
+  uidBuffer[numBytes * 2] = '\0'; // Proper null termination
+  */
+
+
 }
 
 bool EEPROM_UID::isValidLength(UIDLength length)
@@ -364,5 +424,5 @@ uint8_t EEPROM_UID::writePage(uint8_t *dataBuffer, uint8_t startAddress, uint8_t
 uint32_t EEPROM_UID::readUID()
 {
 
-  return getUID(UID_32bit);
+  return getUID32(UID_32bit);
 }
