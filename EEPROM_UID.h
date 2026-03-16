@@ -20,7 +20,7 @@
 
 #define LIBRARY_VERSION "0.1"
 
-#define DEFAULT_ADDRESS 0x50
+#define DEFAULT_ADDRESS 0x51
 
 //* EEPROM chip definitions
 
@@ -32,11 +32,11 @@
 
 //* EUI-48 chips:
 // #define EEPROM_24AA02E48
-#define EEPROM_24AA025E48
+// #define EEPROM_24AA025E48
 
 //* EUI-64 chips:
 // #define EEPROM_24AA02E64
-// #define EEPROM_24AA025E64
+#define EEPROM_24AA025E64
 
 //* EEPROM size in bytes
 #define EEPROM_SIZE_BYTES 256
@@ -50,20 +50,26 @@
 #error "EEPROM not defined"
 #endif
 
+
 //* Fixed or variable length UID/EID
 #if defined(EEPROM_24AA02UID) || defined(EEPROM_24AA025UID)
-#define EXTENSIBLE_LENGTH true
+    #define EXTENSIBLE_LENGTH true
+    #define BASE_LENGTH 32
 #elif defined(EEPROM_24AA02E48) || defined(EEPROM_24AA025E48) || defined(EEPROM_24AA02E64) || defined(EEPROM_24AA025E64)
-#define EXTENSIBLE_LENGTH false
-#if defined(EEPROM_24AA02E48) || defined(EEPROM_24AA025E48)
-#define FIXED_LENGTH 48
-#elif defined(EEPROM_24AA02E64) || defined(EEPROM_24AA025E64)
-#define FIXED_LENGTH 64
-#endif
+    #define EXTENSIBLE_LENGTH false
+
+    #if defined(EEPROM_24AA02E48) || defined(EEPROM_24AA025E48)
+        #define FIXED_LENGTH 48
+        #define BASE_LENGTH FIXED_LENGTH
+    #elif defined(EEPROM_24AA02E64) || defined(EEPROM_24AA025E64)
+        #define FIXED_LENGTH 64
+        #define BASE_LENGTH FIXED_LENGTH
+    #endif
+
 #endif
 
 //* Register Addresses
-#define START_ADDRESS_32bit 0xFC
+#define START_ADDRESS_32bit 0xFA  //0xFC
 #define START_ADDRESS_48bit 0xFA
 #define START_ADDRESS_64bit 0xF8
 #define START_ADDRESS_128bit 0xF0
@@ -109,8 +115,9 @@ public:
 
   /**
    * @brief Initialize the EEPROM
+   * @return true if successful, false otherwise
    */
-  void begin();
+  bool begin();
 
   /**
    * @brief Read data from EEPROM
@@ -135,7 +142,7 @@ public:
    * @param length UIDLength enum specifying the UID size (default is UID_32bit)
    * @return uint32_t value containing the UID
    */
-  uint32_t getUID(UIDLength length = UID_32bit);
+  uint32_t getUID32(UIDLength length = UID_32bit);
 
   /**
    * @brief Retrieve the unique identifier as a C-style string
@@ -162,7 +169,7 @@ public:
    * @brief Get the stored 32-bit UID fetched during initialization
    * @return Stored 32-bit UID as a uint32_t value
    */
-  uint32_t getStoredUID() const;
+  uint32_t getStored32bitUID() const;
 
   /**
    * @brief Check if there is an error
@@ -189,6 +196,7 @@ private:
   const char *_errorMessage; ///< Error message
   uint32_t _storedUID;       // Cached 32-bit UID
   char _lastUID[65];         // Cached last-read UID in hex (max 256-bit + null)
+  
 
   /**
    * @brief Read a byte from EEPROM
